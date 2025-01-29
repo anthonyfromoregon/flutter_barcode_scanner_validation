@@ -1,25 +1,23 @@
 name: flutter_barcode_scanner_validation
 description: A fork of flutter_barcode_scanner adding validation functionality. A plugin for barcode scanning support on Android and iOS. Supports barcodes, QR codes, etc.
 version: 1.0.1
-author: Anthony <anthonyfromoregon@gmail.com>
 homepage: https://github.com/anthonyfromoregon/flutter_barcode_scanner_validation
 
 environment:
-  sdk: '>=2.12.0
+  sdk: '>=2.12.0 <3.0.0'
   flutter: ">=1.12.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_plugin_android_lifecycle: ^2.0.1
+
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
   test: ^1.16.8
 
 flutter:
-  # This section identifies this Flutter project as a plugin project.
-  # The androidPackage and pluginClass identifiers should not ordinarily
-  # be modified. They are used by the tooling to maintain consistency when
-  # adding or updating assets for this project.
   plugin:
     platforms:
       android:
