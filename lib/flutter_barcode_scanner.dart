@@ -1,75 +1,41 @@
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 
-/// Scan mode which is either QR code or BARCODE
-enum ScanMode { QR, BARCODE, DEFAULT }
+enum ScanMode { BARCODE, QR }
 
-/// Provides access to the barcode scanner.
-///
-/// This class is an interface between the native Android and iOS classes and a
-/// Flutter project.
 class FlutterBarcodeScanner {
   static const MethodChannel _channel =
-      MethodChannel('flutter_barcode_scanner');
+      const MethodChannel('flutter_barcode_scanner');
 
-  static const EventChannel _eventChannel =
-      EventChannel('flutter_barcode_scanner_receiver');
-
-  static Stream? _onBarcodeReceiver;
-
-  /// Scan with the camera until a barcode is identified, then return.
-  ///
-  /// Shows a scan line with [lineColor] over a scan window. A flash icon is
-  /// displayed if [isShowFlashIcon] is true. The text of the cancel button can
-  /// be customized with the [cancelButtonText] string.
-  static Future<String> scanBarcode(String lineColor, String cancelButtonText,
-      bool isShowFlashIcon, ScanMode scanMode) async {
-    if (cancelButtonText.isEmpty) {
-      cancelButtonText = 'Cancel';
+  static Future<String> scanBarcode(
+    String lineColor,
+    String cancelButtonText,
+    bool isShowFlashIcon,
+    ScanMode scanMode, {
+    String? validationPattern,
+  }) async {
+    if (lineColor.length != 7 || !lineColor.startsWith("#")) {
+      throw new FormatException(
+          "Invalid lineColor format. It should be a valid hex color of the form #RRGGBB.");
     }
 
-    // Pass params to the plugin
-    Map params = <String, dynamic>{
-      'lineColor': lineColor,
-      'cancelButtonText': cancelButtonText,
-      'isShowFlashIcon': isShowFlashIcon,
-      'isContinuousScan': false,
-      'scanMode': scanMode.index
-    };
+    final String barcodeScanRes = await _channel.invokeMethod('scanBarcode', {
+      "lineColor": lineColor,
+      "cancelButtonText": cancelButtonText,
+      "isShowFlashIcon": isShowFlashIcon,
+      "scanMode": scanMode.index,
+      "validationPattern": validationPattern,
+    });
 
-    /// Get barcode scan result
-    final barcodeResult =
-        await _channel.invokeMethod('scanBarcode', params) ?? '';
-    return barcodeResult;
+    return barcodeScanRes;
   }
 
-  /// Returns a continuous stream of barcode scans until the user cancels the
-  /// operation.
-  ///
-  /// Shows a scan line with [lineColor] over a scan window. A flash icon is
-  /// displayed if [isShowFlashIcon] is true. The text of the cancel button can
-  /// be customized with the [cancelButtonText] string. Returns a stream of
-  /// detected barcode strings.
-  static Stream? getBarcodeStreamReceiver(String lineColor,
-      String cancelButtonText, bool isShowFlashIcon, ScanMode scanMode) {
-    if (cancelButtonText.isEmpty) {
-      cancelButtonText = 'Cancel';
-    }
-
-    // Pass params to the plugin
-    Map params = <String, dynamic>{
-      'lineColor': lineColor,
-      'cancelButtonText': cancelButtonText,
-      'isShowFlashIcon': isShowFlashIcon,
-      'isContinuousScan': true,
-      'scanMode': scanMode.index
-    };
-
-    // Invoke method to open camera, and then create an event channel which will
-    // return a stream
-    _channel.invokeMethod('scanBarcode', params);
-    _onBarcodeReceiver ??= _eventChannel.receiveBroadcastStream();
-    return _onBarcodeReceiver;
+  static Future<void> getBarcodeStreamReceiver(
+      void Function(String) updateListener) async {
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'updateBarcodeScannerValue') {
+        updateListener(call.arguments);
+      }
+    });
   }
 }
